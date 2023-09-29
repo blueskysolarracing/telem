@@ -1,4 +1,4 @@
-# add lib to path
+# add shared dir to path
 import sys, os
 
 # set path to parent directory, which contains the lib folder
