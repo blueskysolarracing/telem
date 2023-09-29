@@ -1,0 +1,22 @@
+# add lib to path
+import sys, os
+
+# set path to parent directory, which contains the lib folder
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BASE_DIR)
+
+import connection, gui, sender
+
+
+if __name__ == "__main__":
+    # Create connection
+    conn = connection.Connection()
+
+    # Create sender
+    sender = sender.BssrProtocolSender(conn)
+
+    # Create GUI
+    gui = gui.GUI(sender)
+
+    # Start GUI
+    gui.start()
