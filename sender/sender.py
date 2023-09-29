@@ -1,7 +1,7 @@
 import time
 import numpy as np
-from lib.utilities import calculate_crc
-from lib.protocol_ids import Sender_ID, Chase_Data_ID
+from shared.utilities import calculate_crc
+from shared.protocol_ids import Sender_ID, Chase_Data_ID
 
 NUM_BYTES_IN_WORD = 4
 
