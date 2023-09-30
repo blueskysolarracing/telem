@@ -16,7 +16,8 @@ if __name__ == "__main__":
     sender = sender.BssrProtocolSender(conn)
 
     # Create GUI
-    gui = gui.GUI(sender)
+    gui = gui.App(sender)
 
     # Start GUI
     gui.start()
+    

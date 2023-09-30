@@ -14,7 +14,7 @@ def calculate_crc(crc_bytes, payload_length, use_numpy=True):
     payload_length: How many bytes make up the payload
     """
     
-    num_elements = crc_bytes[0:4+payload_length].size
+    num_elements = len(crc_bytes[0:4+payload_length])
     if (num_elements % NUM_BYTES_IN_WORD != 0):
         return np.zeros(4) if use_numpy else [0, 0, 0, 0]
 
