@@ -4,12 +4,14 @@ import math
 import sqlite3 
 import numpy as np
 from datetime import datetime
-from sender import BssrProtocolSender
+from sender.radiosender import BssrProtocolSender
 
 
 class App:
 
-    def __init__(self, sender):
+    def __init__(self, sender: BssrProtocolSender):
+        self.sender = sender
+        self.sender
         # Qt app setup
         self.qt_application = QtWidgets.QApplication([])
         
@@ -31,15 +33,15 @@ class App:
         self.pushButton = QtWidgets.QPushButton('Enter')
 
         self.request = QtWidgets.QPushButton('Hear us?')
-        self.pullOver = QtWidgets.QPushButton('Pull Over')
-        self.drlOff = QtWidgets.QPushButton('ECO Off')
-        self.drlOn = QtWidgets.QPushButton('ECO On')
+        self.pull_over = QtWidgets.QPushButton('Pull Over')
+        self.eco_off = QtWidgets.QPushButton('ECO Off')
+        self.eco_on = QtWidgets.QPushButton('ECO On')
         self.egress = QtWidgets.QPushButton('EGRESS')
 
         self.parent_layout.addWidget(self.request)
-        self.parent_layout.addWidget(self.pullOver)
-        self.parent_layout.addWidget(self.drlOff)
-        self.parent_layout.addWidget(self.drlOn)
+        self.parent_layout.addWidget(self.pull_over)
+        self.parent_layout.addWidget(self.eco_off)
+        self.parent_layout.addWidget(self.eco_on)
         self.parent_layout.addWidget(self.egress)
         self.parent_layout.addWidget(self.pushButton)
         self.parent_layout.addWidget(self.text_edit)
@@ -47,14 +49,16 @@ class App:
 
 
         # Connect each button to its corresponding function
+        
+        # communication buttons
         self.pushButton.clicked.connect(self.send_text)
-        self.request.clicked.connect(self.send_request)
-        self.pullOver.clicked.connect(self.send_pullOver)
-        self.drlOff.clicked.connect(self.send_drlOff)
-        self.drlOn.clicked.connect(self.send_drlOn)
-        self.egress.clicked.connect(self.send_egress)
-
-        self.sender = BssrProtocolSender(connection=None)
+        self.request.clicked.connect(lambda: self.sender.phrase_sender("Hear us?"))
+        self.pull_over.clicked.connect(lambda: self.sender.phrase_sender("Pull Over"))
+        self.egress.clicked.connect(lambda: self.sender.phrase_sender("EGRESS"))
+        
+        # motor control buttons
+        self.eco_off.clicked.connect(self.sender.eco_off_sender)
+        self.eco_on.clicked.connect(self.sender.eco_on_sender)
 
 
     #Functions for the buttons in Communication Request - tharaka
@@ -62,22 +66,6 @@ class App:
         print(len(self.text_edit.text()))
         text = self.text_edit.text()
         self.sender.phrase_sender(text)
-    
-    def send_request(self):
-        self.sender.phrase_sender('Hear us?')
-
-    def send_pullOver(self):
-        self.sender.phrase_sender("Pull Over")
-
-    def send_drlOff(self):
-        self.sender.phrase_sender("ECO Off")
-
-    def send_drlOn(self):
-        self.sender.phrase_sender("ECO On")
-
-    def send_egress(self):
-        self.sender.phrase_sender("EGRESS")
-    
 
 
     def start(self):
