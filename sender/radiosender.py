@@ -38,8 +38,8 @@ class BssrProtocolSender:
         payload = [Chase_Data_ID.CHASE_VMF_ID.value, vmf_state, 0x00, 0x00]
         self.send_serial(payload)
 
-    def _eco_sender(self, eco_on: bool):
-        payload = [Chase_Data_ID.CHASE_ECO_MODE_ID.value, 0x01 if eco_on else 0x00 , 0x00, 0x00]
+    def _eco_sender(self, eco_on):
+        payload = [Chase_Data_ID.CHASE_ECO_MODE_ID.value, eco_on, 0x00, 0x00]
         self.send_serial(payload)
 
     def phrase_sender(self, phrase):
@@ -66,8 +66,8 @@ class BssrProtocolSender:
 
     def eco_on_sender(self):
         print("ECO On")
-        self._eco_sender(True)
+        self._eco_sender(0x01)
     
     def eco_off_sender(self):
         print("ECO Off")
-        self._eco_sender(False)
+        self._eco_sender(0x00)
