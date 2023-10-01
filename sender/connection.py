@@ -4,4 +4,4 @@ class Connection:
         pass
 
     def write(self, data):
-        pass
+        print(f"Writing data: {data}")

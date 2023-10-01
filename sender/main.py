@@ -5,7 +5,7 @@ import sys, os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-import connection, gui, sender
+import connection, gui, radiosender
 
 
 if __name__ == "__main__":
@@ -13,10 +13,11 @@ if __name__ == "__main__":
     conn = connection.Connection()
 
     # Create sender
-    sender = sender.BssrProtocolSender(conn)
+    sender = radiosender.BssrProtocolSender(conn)
 
     # Create GUI
-    gui = gui.GUI(sender)
+    gui = gui.App(sender)
 
     # Start GUI
     gui.start()
+    
