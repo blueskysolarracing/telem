@@ -22,7 +22,7 @@ class BssrProtocolSender:
         "Send bytes from serial port to UART Hub"
 
         # packet = [START_BYTE, PAYLOAD_LENGTH, CHASE_SENDER_ID, self.sequence_num] + payload
-        packet = [self.START_BYTE, len(payload), Sender_ID.CHASE_ID.value, 0] + payload
+        packet = [self.START_BYTE, len(payload), Sender_ID.CHASE_ID, 0] + payload
 
         # CRC = utilities.calculate_crc(packet, PAYLOAD_LENGTH)
         CRC = calculate_crc(packet, len(payload), use_numpy=False)
@@ -35,11 +35,11 @@ class BssrProtocolSender:
         self.connection.write(bytearray(packet))
     
     def _vfm_sender(self, vmf_state):
-        payload = [Chase_Data_ID.CHASE_VMF_ID.value, vmf_state, 0x00, 0x00]
+        payload = [Chase_Data_ID.CHASE_VMF_ID, vmf_state, 0x00, 0x00]
         self.send_serial(payload)
 
     def _eco_sender(self, eco_on):
-        payload = [Chase_Data_ID.CHASE_ECO_MODE_ID.value, eco_on, 0x00, 0x00]
+        payload = [Chase_Data_ID.CHASE_ECO_MODE_ID, eco_on, 0x00, 0x00]
         self.send_serial(payload)
 
     def phrase_sender(self, phrase):
@@ -52,7 +52,7 @@ class BssrProtocolSender:
         
         payload = bytes(new_phrase, 'utf-8').hex()
         # turn payload into list of bytes
-        payload = [Chase_Data_ID.CHASE_MESSAGE_ID.value] + [int(payload[i:i+2], 16) for i in range(0, len(payload), 2)]
+        payload = [Chase_Data_ID.CHASE_MESSAGE_ID] + [int(payload[i:i+2], 16) for i in range(0, len(payload), 2)]
         print(f"ID and word encoding: {payload}")
         self.send_serial(payload)
 
