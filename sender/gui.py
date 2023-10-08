@@ -34,18 +34,22 @@ class App:
 
         self.request = QtWidgets.QPushButton('Hear us?')
         self.pull_over = QtWidgets.QPushButton('Pull Over')
+        self.egress = QtWidgets.QPushButton('EGRESS')
         self.eco_off = QtWidgets.QPushButton('ECO Off')
         self.eco_on = QtWidgets.QPushButton('ECO On')
-        self.egress = QtWidgets.QPushButton('EGRESS')
+        self.vfm_up = QtWidgets.QPushButton('VFM Up')
+        self.vfm_down = QtWidgets.QPushButton('VFM Down')
 
         self.parent_layout.addWidget(self.request)
         self.parent_layout.addWidget(self.pull_over)
-        self.parent_layout.addWidget(self.eco_off)
-        self.parent_layout.addWidget(self.eco_on)
         self.parent_layout.addWidget(self.egress)
         self.parent_layout.addWidget(self.pushButton)
         self.parent_layout.addWidget(self.text_edit)
         self.parent_layout.addWidget(self.pushButton)
+        self.parent_layout.addWidget(self.eco_off)
+        self.parent_layout.addWidget(self.eco_on)
+        self.parent_layout.addWidget(self.vfm_up)
+        self.parent_layout.addWidget(self.vfm_down)
 
 
         # Connect each button to its corresponding function
@@ -59,6 +63,8 @@ class App:
         # motor control buttons
         self.eco_off.clicked.connect(self.sender.eco_off_sender)
         self.eco_on.clicked.connect(self.sender.eco_on_sender)
+        self.vfm_up.clicked.connect(self.sender.vfm_up_sender)
+        self.vfm_down.clicked.connect(self.sender.vfm_down_sender)
 
 
     #Functions for the buttons in Communication Request - tharaka
