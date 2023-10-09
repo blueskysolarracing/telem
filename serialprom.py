@@ -8,7 +8,7 @@ import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 import json
 #SERIAL_PORT = '/dev/pts/3'
-SERIAL_PORT = '/dev/ttyUSB0'
+SERIAL_PORT = '/dev/ttyUSB1'
 
 MQTT_HOST = "localhost"
 MQTT_PORT = 1883
@@ -348,7 +348,8 @@ class Parser:
                 publish.multiple([
                     ("dcmb/vfm_position", json.dumps({"vfm_position":int(self.payload[8])}), 0, False),
                     ("dcmb/target_power", json.dumps({"target_power":float(target_power)}), 0, False),
-                    ("dcmb/target_speed", json.dumps({"target_speed":int(self.payload[3])}), 0, False)
+                    ("dcmb/target_speed", json.dumps({"target_speed":int(self.payload[3])}), 0, False),
+                    ("dcmb/motor_state", json.dumps({"motor_state": int(self.payload[10])}), 0, False)
                 ], hostname=MQTT_HOST, port=MQTT_PORT, client_id="", keepalive=60)
             elif self.data_id == LIGHT_CONTROL:
                 left_right_indicator = (self.payload[2] & 0b00000001)
