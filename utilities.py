@@ -4,7 +4,6 @@ Utility functions
 
 import numpy as np
 from datetime import datetime
-import pandas as pd
 
 NUM_BYTES_IN_WORD = 4
 
