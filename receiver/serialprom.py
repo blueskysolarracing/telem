@@ -17,7 +17,7 @@ import shared.utilities as utilities
 
 
 #SERIAL_PORT = '/dev/pts/3'
-SERIAL_PORT = '/dev/ttyUSB1'
+SERIAL_PORT = '/dev/ttyUSB0'
 
 MQTT_HOST = "localhost"
 MQTT_PORT = 1883
@@ -58,13 +58,8 @@ HEARTBEAT = 15
 ERROR_WINDOW = 5 # seconds
 
 
-def on_message(client, userdata, message):
-    data = base64.b64decode(message.payload)
 
 
-def recieve_mqtt(sender_buffer):
-    subscribe.callback(callback, "sender/packet", qos=0, userdata=None, 
-    hostname=MQTT_HOST, port=MQTT_PORT)
 
 class Parser:
     def __init__(self, byte_buffer):
@@ -418,7 +413,7 @@ def start_parser(byte_buffer: mp.Queue):
     parser = Parser(byte_buffer)
     parser.run()
 
-def read_serial(byte_buffer: mp.Queue):
+def read_serial(byte_buffer: mp.Queue, send_buffer: mp.Queue):
     """Read from serial and write to buffer"""
     ser = serial.Serial(SERIAL_PORT, 115200)
     while True:
@@ -426,19 +421,36 @@ def read_serial(byte_buffer: mp.Queue):
         # TODO safe exit for shutdown with try finally
         byte = ser.read(1)
         byte_buffer.put(byte)
+        if not send_buffer.empty():
+            data = send_buffer.get_nowait()
+            ser.write(data)
         #finally:
         #    continue
+
+def recieve_mqtt(sender_buffer):
+    while 1:
+        print("listeneng")
+        data = subscribe.simple("sender/packet", qos=0, msg_count=1,
+            hostname=MQTT_HOST, 
+            port=MQTT_PORT, keepalive=60)
+        print("got data")
+        sender_buffer.put(base64.b64decode(data.payload))
+        print("sending data")
+
 
 def main():
     """
     Run the parser
     """
     byte_buffer = mp.Queue()
-    serial_proc = mp.Process(target=read_serial, args=(byte_buffer,))
+    send_buffer = mp.Queue()
+    serial_proc = mp.Process(target=read_serial, args=(byte_buffer, send_buffer,))
     serial_proc.start()
     serial_parser = mp.Process(target=start_parser, args=(byte_buffer,))
     serial_parser.start()
 
+    serial_sender = mp.Process(target=recieve_mqtt, args=(send_buffer,))
+    serial_sender.start()
 
 
 
