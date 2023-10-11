@@ -1,11 +1,12 @@
 import numpy as np
 import time
 import struct
-
+import base64
 import multiprocessing as mp
 import serial
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
+import paho.mqtt.subscribe as subscribe
 import json
 import os
 import sys
@@ -56,6 +57,14 @@ HEARTBEAT = 15
 
 ERROR_WINDOW = 5 # seconds
 
+
+def on_message(client, userdata, message):
+    data = base64.b64decode(message.payload)
+
+
+def recieve_mqtt(sender_buffer):
+    subscribe.callback(callback, "sender/packet", qos=0, userdata=None, 
+    hostname=MQTT_HOST, port=MQTT_PORT)
 
 class Parser:
     def __init__(self, byte_buffer):
