@@ -1,13 +1,32 @@
 import numpy as np
-from prometheus_client import start_http_server, Counter, Gauge
 import time
 import struct
-import telemGui.utilities as utilities
+import base64
 import multiprocessing as mp
 import serial
+import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
+import paho.mqtt.subscribe as subscribe
+import json
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BASE_DIR)
+import shared.utilities as utilities
 
-SERIAL_PORT = '/dev/ttyUSB2'
 
+
+#SERIAL_PORT = '/dev/pts/3'
+SERIAL_PORT = '/dev/ttyUSB0'
+
+MQTT_HOST = "localhost"
+MQTT_PORT = 1883
+
+BMS = "BMS"
+MCMB = "MCMB"
+DCMB = "DCMB"
+BBMB = "BBMB"
+PPTMB = "PPTMB"
 MAX_PAYLOAD_SIZE = 24
 MAX_PACKET_SIZE = 32
 ESCAPED_BYTE = 90
@@ -39,11 +58,14 @@ HEARTBEAT = 15
 ERROR_WINDOW = 5 # seconds
 
 
+
+
+
 class Parser:
     def __init__(self, byte_buffer):
         self.byte_buffer = byte_buffer
-        start_http_server(8000)
-
+        self.client = mqtt.Client()
+        self.client.connect(MQTT_HOST, MQTT_PORT, 60)
         # Indicate the status of each byte in a packet
         self.escaped_received = False
         self.started_received = False
@@ -86,28 +108,8 @@ class Parser:
         self.reference_time = time.time()
 
 
-        # Prometheus metrics
-
-        # BUS METRICS
-        self.bbmb_bus_metrics_voltage_gauge = Gauge("bbmb_bus_voltage", "BBMB Bus Voltage")
-        self.bbmb_bus_metrics_current_gauge = Gauge("bbmb_bus_current", "BBMB Bus Current")
-
-        self.pptmb_bus_metrics_voltage_gauge = Gauge("pptmb_bus_voltage", "PPTMB Bus Voltage")
-        self.pptmb_bus_metrics_current_gauge = Gauge("pptmb_bus_current", "PPTMB Bus Current")
-
-        self.mcmb_bus_metrics_voltage_gauge = Gauge("mcmb_bus_voltage", "MCMB Bus Voltage")
-        self.mcmb_bus_metrics_current_gauge = Gauge("mcmb_bus_current", "MCMB Bus Current")
-
-
         # MCMB
-        self.mcmb_car_speed_gauge = Gauge("mcmb_car_speed", "MCMB Car Speed")
-        self.mcmb_motor_temperature = Gauge("mcmb_motor_temperature", "MCMB Motor Temperature")
-
-        # Heartbeats
-        self.bbmb_heartbeat = Gauge("bbmb_heartbeat", "BBMB Heartbeat")
-        self.pptmb_heartbeat = Gauge("pptmb_heartbeat", "PPTMB Heartbeat")
-        self.mcmb_heartbeat = Gauge("mcmb_heartbeat", "MCMB Heartbeat")
-        self.dcmb_heartbeat = Gauge("dcmb_heartbeat", "DCMB Heartbeat")
+        self.mcmb_car_speed = 0
 
     def run(self):
         """
@@ -116,9 +118,7 @@ class Parser:
         count = 0
         while True:
             count += 1
-
             byte = self.byte_buffer.get()[0]
-
            # Escaped byte 0x5a - 90 
             if byte == ESCAPED_BYTE and self.escaped_received != True:
                 self.escaped_received = True
@@ -137,25 +137,22 @@ class Parser:
 
                 self.packet[self.packet_index] = byte
                 self.packet_index += 1
-
                 # If the payload length exceeds the maximum size, drop the byte and start the packet again
                 if (self.payload_length > 24):
                     self.reset_loop_variables()
-
+                
             # sender byte (board)
             elif self.started_received and self.length_received and self.sender_received != True:
                 if self.escaped_received:
                     self.escaped_received = False
-
                 self.sender_received = True
                 self.sender = byte
+
                 self.packet[self.packet_index] = byte
                 self.packet_index += 1
-
                 # If the sender byte is invalid, drop the byte and start again
                 if (self.sender < 1 or self.sender > 6):
                     self.reset_loop_variables()
-
             # sequence byte
             elif self.started_received and self.length_received and self.sender_received and self.sequence_received != True:
                 if self.escaped_received:
@@ -243,6 +240,9 @@ class Parser:
                     self.extract_data()
                 else:
                     self.num_packets_corrupted += 1
+                    print("crc dropped")
+                    print(calculated_crc)
+                    print(crc_bytes)
 
                 self.reset_loop_variables()
 
@@ -290,68 +290,167 @@ class Parser:
     def extract_data(self):
         """
         Parse the packet stored in self.packet and update the gui
+        print("got data")
         """      
-
         # BBMB
         if self.sender == BBMB_SENDER_ID:
-            if self.data_id == BUS_METRICS:
-                self.bbmb_bus_metrics_current_gauge.set(struct.unpack('f', self.payload[0:4])[0])
-                self.bbmb_bus_metrics_voltage_gauge.set(struct.unpack('f', self.payload[4:8])[0])
+            if self.data_id == HEARTBEAT:
+                self.send_heartbeat(BBMB, self.payload[2])
+
+            elif self.data_id == BUS_METRICS:
+                self.send_bus_metrics(BBMB, struct.unpack('f', self.payload[0:4])[0], 
+                                      struct.unpack('f', self.payload[4:8])[0])
+            elif self.data_id == BMS_HEARTBEAT:
+                self.send_heartbeat(BMS, self.payload[2])
             elif self.data_id == CELL_TEMPERATURE:
-                self.bms_cell_temp_module_id = self.payload[14]
-            elif self.data_id == HEARTBEAT:
-                self.bbmb_heartbeat.set(self.payload[2])
+                self.send_cell_temps()
+            elif self.data_id == CELL_VOLTAGE:
+                self.send_cell_volts()
+            elif self.data_id == CELL_SOC:
+                self.send_cell_soc()
+            elif self.data_id == RELAY_STATE:
+                pass
 
+
+        # PPTMB
         elif self.sender == PPTMB_SENDER_ID:
-            if self.data_id == BUS_METRICS:
-                self.pptmb_bus_metrics_current_gauge.set(struct.unpack('f', self.payload[0:4])[0])
-                self.pptmb_bus_metrics_voltage_gauge.set(struct.unpack('f', self.payload[4:8])[0])
-            elif self.data_id == HEARTBEAT:
-                self.pptmb_heartbeat.set(self.payload[2])
+            if self.data_id == HEARTBEAT:
+                self.send_heartbeat(PPTMB, self.payload[2])
 
+            elif self.data_id == BUS_METRICS:
+                self.send_bus_metrics(PPTMB, struct.unpack('f', self.payload[0:4])[0], struct.unpack('f', self.payload[4:8])[0])
+
+        
+        # MCMB
         elif self.sender == MCMB_SENDER_ID:
-            if self.data_id == BUS_METRICS:
-                self.mcmb_bus_metrics_current_gauge.set(struct.unpack('f', self.payload[0:4])[0])
-                self.mcmb_bus_metrics_voltage_gauge.set(struct.unpack('f', self.payload[4:8])[0])
+            if self.data_id == HEARTBEAT:
+                self.send_heartbeat(MCMB, self.payload[2])
             elif self.data_id == CAR_SPEED:
-                self.mcmb_car_speed_gauge.set(self.payload[3])
+                self.client.publish("mcmb/car_speed", json.dumps({"car_speed":int(self.payload[2])}))
+                #self.client.publish("mcmb/car_speed", json.dumps({"car_speed":struct.unpack('u', self.payload[1:4])}))
             elif self.data_id == MOTOR_TEMPERATURE:
-                self.mcmb_motor_temperature.set(struct.unpack('f', self.payload[0:4])[0])
-            elif self.data_id == HEARTBEAT:
-                self.mcmb_heartbeat.set(self.payload[2])
+                self.client.publish("mcmb/motor_temp", json.dumps({"motor_temp":struct.unpack('f', self.payload[0:4])[0]}))
 
+            elif self.data_id == BUS_METRICS:
+                self.send_bus_metrics(MCMB, struct.unpack('f', self.payload[0:4])[0], struct.unpack('f', self.payload[4:8])[0])
+
+        # DCMB
         elif self.sender == DCMB_SENDER_ID:
             if self.data_id == HEARTBEAT:
-                self.dcmb_heartbeat.set(self.payload[2])
-                
+                self.send_heartbeat(DCMB, self.payload[2])
+            elif self.data_id == MOTOR_CONTROL:
+                target_power = struct.unpack('<H', self.payload[6:8])[0]
 
-            
+                publish.multiple([
+                    ("dcmb/vfm_position", json.dumps({"vfm_position":int(self.payload[8])}), 0, False),
+                    ("dcmb/target_power", json.dumps({"target_power":float(target_power)}), 0, False),
+                    ("dcmb/target_speed", json.dumps({"target_speed":int(self.payload[3])}), 0, False),
+                    ("dcmb/motor_state", json.dumps({"motor_state": int(self.payload[10])}), 0, False)
+                ], hostname=MQTT_HOST, port=MQTT_PORT, client_id="", keepalive=60)
+            elif self.data_id == LIGHT_CONTROL:
+                left_right_indicator = (self.payload[2] & 0b00000001)
+                indicator = (self.payload[2] & 0b00000010) >> 1
+                drl = (self.payload[2] & 0b00000100) >> 2
+                brake_lights = (self.payload[2] & 0b00001000) >> 3
+                hazard_lights = (self.payload[2] & 0b00010000) >> 4
+                print(bin(self.payload[2]))
+                publish.multiple([
+                    ("dcmb/lights/indicator", json.dumps({"indicator": int(indicator)}), 0, False),
+                    ("dcmb/lights/left_right", json.dumps({"left_right": int(left_right_indicator)}), 0, False),
+                    ("dcmb/lights/drl", json.dumps({"drl": int(drl)}), 0, False),
+                    ("dcmb/lights/brake_lights", json.dumps({"brake_lights": int(brake_lights)}), 0, False),
+                    ("dcmb/lights/hazard_lights", json.dumps({"hazard_lights": int(hazard_lights)}), 0, False)
+                ], hostname=MQTT_HOST, port=MQTT_PORT, client_id="", keepalive=60)
+
+
+    def send_heartbeat(self, name, value):
+        self.client.publish("heartbeats/" + name, json.dumps({name:int(value)}))
+                
+    def send_bus_metrics(self, name, current, voltage):
+        publish.multiple([
+            ("bus_metrics/current/" + name, json.dumps({name: current}), 0, False),
+            ("bus_metrics/voltage/" + name, json.dumps({name: voltage}), 0, False)
+        ], hostname=MQTT_HOST, port=MQTT_PORT, client_id="", keepalive=60,)
+    
+    def send_cell_temps(self):
+        module_id = self.payload[14]
+        topic = "cell_metrics/temperature/module/" + str(module_id) + "/cell/"
+        packets = []
+        for i in range(3):
+            value = struct.unpack('f', self.payload[(2-i)*4:(3-i)*4])[0]
+            # TODO send temp fault
+            if value != -1000:
+                packets.append((topic + str(i), 
+                    json.dumps(
+                        {"module_{}_cell_{}".format(module_id, i): value}),
+                        0,
+                    False))
+        publish.multiple(packets, hostname=MQTT_HOST, port=MQTT_PORT, client_id="", keepalive=60,)
+
+    def send_cell_data(self, topic_name):
+        module_id = self.payload[22]
+        topic = "cell_metrics/{}/module/{}/cell/".format(topic_name, module_id)
+        packets = []
+        for i in range(5):
+            value = struct.unpack('f', self.payload[(4-i)*4:(5-i)*4])[0]
+            if value != -1000:
+                packets.append((topic + str(i),
+                            json.dumps(
+                                {"module_{}_cell_{}".format(module_id, i): value}),
+                                0,
+                                False))
+        publish.multiple(packets, hostname=MQTT_HOST, port=MQTT_PORT, client_id="", keepalive=60,)
+
+    def send_cell_volts(self):
+        self.send_cell_data("voltage")
+        pass
+
+    def send_cell_soc(self):
+        self.send_cell_data("soc")
 
 def start_parser(byte_buffer: mp.Queue):
     """Start the parser"""
     parser = Parser(byte_buffer)
     parser.run()
 
-def read_serial(byte_buffer: mp.Queue):
+def read_serial(byte_buffer: mp.Queue, send_buffer: mp.Queue):
     """Read from serial and write to buffer"""
     ser = serial.Serial(SERIAL_PORT, 115200)
     while True:
-        try:
-            byte = ser.read(1)
-            byte_buffer.put(byte)
-        finally:
-            continue
+        #try:
+        # TODO safe exit for shutdown with try finally
+        byte = ser.read(1)
+        byte_buffer.put(byte)
+        if not send_buffer.empty():
+            data = send_buffer.get_nowait()
+            ser.write(data)
+        #finally:
+        #    continue
+
+def recieve_mqtt(sender_buffer):
+    while 1:
+        print("listeneng")
+        data = subscribe.simple("sender/packet", qos=0, msg_count=1,
+            hostname=MQTT_HOST, 
+            port=MQTT_PORT, keepalive=60)
+        print("got data")
+        sender_buffer.put(base64.b64decode(data.payload))
+        print("sending data")
+
 
 def main():
     """
     Run the parser
     """
     byte_buffer = mp.Queue()
-    serial_proc = mp.Process(target=read_serial, args=(byte_buffer,))
+    send_buffer = mp.Queue()
+    serial_proc = mp.Process(target=read_serial, args=(byte_buffer, send_buffer,))
     serial_proc.start()
     serial_parser = mp.Process(target=start_parser, args=(byte_buffer,))
     serial_parser.start()
 
+    serial_sender = mp.Process(target=recieve_mqtt, args=(send_buffer,))
+    serial_sender.start()
 
 
 

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import IntEnum
 
 # ===== Sender IDs =====
-class Sender_ID(Enum):
+class Sender_ID(IntEnum):
     SENDER_ID_NOT_USED = 0
     BBMB_ID = 1
     PPTMB_ID = 2
@@ -11,7 +11,7 @@ class Sender_ID(Enum):
     BMS_ID = 6
 
 # ===== Data IDs =====
-class BBMB_Data_ID(Enum):
+class BBMB_Data_ID(IntEnum):
     BBMB_BUS_METRICS_ID = 0 # use
     BBMB_FAULT_STATE_ID = 1 # use
     BBMB_BSD_ID = 2 
@@ -23,7 +23,7 @@ class BBMB_Data_ID(Enum):
     BBMB_CORE_TEMP_ID = 0x0E
     BBMB_HEARTBEAT_ID = 0x0F # use
 
-class PPTMB_DATA_ID(Enum):
+class PPTMB_DATA_ID(IntEnum):
     PPTMB_BUS_METRICS_ID = 0
     PPTMB_PPT_METRICS_ID = 1
 
@@ -32,7 +32,7 @@ class PPTMB_DATA_ID(Enum):
     PPTMB_CORE_TEMP_ID = 0x0E
     PPTMB_HEARTBEAT_ID = 0x0F # use
 
-class MCMB_Data_ID(Enum):
+class MCMB_Data_ID(IntEnum):
     MCMB_BUS_METRICS_ID = 0
     MCMB_CAR_SPEED_ID = 1
     MCMB_MOTOR_TEMPERATURE_ID = 2
@@ -41,7 +41,7 @@ class MCMB_Data_ID(Enum):
     MCMB_CORE_TEMP_ID = 0x0E
     MCMB_HEARTBEAT_ID = 0x0F
 
-class DCMB_Data_ID(Enum):
+class DCMB_Data_ID(IntEnum):
     DCMB_MC2_STATE_ID = 0  # To be deprecated
     DCMB_BBOX_STARTUP_ID = 1
     DCMB_PPTBOX_STARTUP_ID = 2
@@ -55,7 +55,7 @@ class DCMB_Data_ID(Enum):
     DCMB_CORE_TEMP_ID = 0x0E
     DCMB_HEARTBEAT_ID = 0x0F
 
-class Chase_Data_ID(Enum):
+class Chase_Data_ID(IntEnum):
     CHASE_HEARTBEAT_REQ_ID = 0
     CHASE_SOFT_RESET_REQ_ID = 1
     CHASE_SET_FREQUENCY_ID = 2
