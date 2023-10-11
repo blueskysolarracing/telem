@@ -1,12 +1,20 @@
 import numpy as np
 import time
 import struct
-import utilities
+
 import multiprocessing as mp
 import serial
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 import json
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BASE_DIR)
+import shared.utilities as utilities
+
+
+
 #SERIAL_PORT = '/dev/pts/3'
 SERIAL_PORT = '/dev/ttyUSB1'
 
@@ -52,7 +60,6 @@ ERROR_WINDOW = 5 # seconds
 class Parser:
     def __init__(self, byte_buffer):
         self.byte_buffer = byte_buffer
-        #start_http_server(8000)
         self.client = mqtt.Client()
         self.client.connect(MQTT_HOST, MQTT_PORT, 60)
         # Indicate the status of each byte in a packet
@@ -97,23 +104,8 @@ class Parser:
         self.reference_time = time.time()
 
 
-        # Prometheus metrics
-
-        # BUS METRICS
-        # self.bbmb_bus_metrics_voltage_gauge = Gauge("bbmb_bus_voltage", "BBMB Bus Voltage")
-        # self.bbmb_bus_metrics_current_gauge = Gauge("bbmb_bus_current", "BBMB Bus Current")
-
-        # self.pptmb_bus_metrics_voltage_gauge = Gauge("pptmb_bus_voltage", "PPTMB Bus Voltage")
-        # self.pptmb_bus_metrics_current_gauge = Gauge("pptmb_bus_current", "PPTMB Bus Current")
-
-        # self.mcmb_bus_metrics_voltage_gauge = Gauge("mcmb_bus_voltage", "MCMB Bus Voltage")
-        # self.mcmb_bus_metrics_current_gauge = Gauge("mcmb_bus_current", "MCMB Bus Current")
-
-
         # MCMB
         self.mcmb_car_speed = 0
-        # self.mcmb_motor_temperature = Gauge("mcmb_motor_temperature", "MCMB Motor Temperature")
-
 
     def run(self):
         """
