@@ -1,5 +1,4 @@
-import time
-import numpy as np
+import struct
 from shared.utilities import calculate_crc
 from shared.protocol_ids import Sender_ID, Chase_Data_ID
 
@@ -42,6 +41,35 @@ class BssrProtocolSender:
         payload = [Chase_Data_ID.CHASE_ECO_MODE_ID, eco_on, 0x00, 0x00]
         self.send_serial(payload)
 
+    def _cruise_PI_sender(self, k_p: float, k_i: float, k_d: float):
+        payload = [
+            Chase_Data_ID.CHASE_CRUISE_PI_GAIN_ID, int(k_p != None), int(k_i != None), int(k_d != None),
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        ]
+        GAIN_SCALE_FACTOR = 100000
+
+        if k_p != None:
+            k_p = int(GAIN_SCALE_FACTOR*k_p)
+            byte_array = list(struct.pack('I', k_p))
+            for i in range(4):
+                payload[4+i] = byte_array[3-i]
+
+        if k_i != None:
+            k_i = int(GAIN_SCALE_FACTOR*k_i)
+            byte_array = list(struct.pack('I', k_i))
+            for i in range(4):
+                payload[8+i] = byte_array[3-i]
+
+        if k_d != None:
+            k_d = int(GAIN_SCALE_FACTOR*k_d)
+            byte_array = list(struct.pack('I', k_d))
+            for i in range(4):
+                payload[12+i] = byte_array[3-i]
+        
+        self.send_serial(payload)
+
     def phrase_sender(self, phrase):
         print(f"Sending Message: {phrase}")
 
@@ -71,3 +99,12 @@ class BssrProtocolSender:
     def eco_off_sender(self):
         print("ECO Off")
         self._eco_sender(0x00)
+
+    def cruise_PI_KP_sender(self, k_p):
+        self._cruise_PI_sender(k_p, None, None)
+    
+    def cruise_PI_KI_sender(self, k_i):
+        self._cruise_PI_sender(None, k_i, None)
+
+    def cruise_PI_KD_sender(self, k_d):
+        self._cruise_PI_sender(None, None, k_d)
