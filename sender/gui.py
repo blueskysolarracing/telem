@@ -28,9 +28,9 @@ class App:
 
         # Configure the communications plotting tab - tharaka
 
-        self.text_edit = QtWidgets.QLineEdit()
-        self.text_edit.setMaxLength(11)
-        self.pushButton = QtWidgets.QPushButton('Enter')
+        self.custom_msg_bar = QtWidgets.QLineEdit()
+        self.custom_msg_bar.setMaxLength(11)
+        self.custom_msg_enter_button = QtWidgets.QPushButton('Enter')
 
         self.request = QtWidgets.QPushButton('Hear us?')
         self.pull_over = QtWidgets.QPushButton('Pull Over')
@@ -39,23 +39,40 @@ class App:
         self.eco_on = QtWidgets.QPushButton('ECO On')
         self.vfm_up = QtWidgets.QPushButton('VFM Up')
         self.vfm_down = QtWidgets.QPushButton('VFM Down')
+        
+        self.PI_KP_bar = QtWidgets.QLineEdit()
+        self.PI_KP_bar.setMaxLength(10)
+        self.PI_KP_enter_button = QtWidgets.QPushButton('Enter KP')
+
+        self.PI_KI_bar = QtWidgets.QLineEdit()
+        self.PI_KI_bar.setMaxLength(10)
+        self.PI_KI_enter_button = QtWidgets.QPushButton('Enter KI')
+
+        self.PI_KD_bar = QtWidgets.QLineEdit()
+        self.PI_KD_bar.setMaxLength(10)
+        self.PI_KD_enter_button = QtWidgets.QPushButton('Enter KD')
 
         self.parent_layout.addWidget(self.request)
         self.parent_layout.addWidget(self.pull_over)
         self.parent_layout.addWidget(self.egress)
-        self.parent_layout.addWidget(self.pushButton)
-        self.parent_layout.addWidget(self.text_edit)
-        self.parent_layout.addWidget(self.pushButton)
+        self.parent_layout.addWidget(self.custom_msg_enter_button)
+        self.parent_layout.addWidget(self.custom_msg_bar)
+        self.parent_layout.addWidget(self.custom_msg_enter_button)
         self.parent_layout.addWidget(self.eco_off)
         self.parent_layout.addWidget(self.eco_on)
         self.parent_layout.addWidget(self.vfm_up)
         self.parent_layout.addWidget(self.vfm_down)
-
+        self.parent_layout.addWidget(self.PI_KP_bar)
+        self.parent_layout.addWidget(self.PI_KP_enter_button)
+        self.parent_layout.addWidget(self.PI_KI_bar)
+        self.parent_layout.addWidget(self.PI_KI_enter_button)
+        self.parent_layout.addWidget(self.PI_KD_bar)
+        self.parent_layout.addWidget(self.PI_KD_enter_button)
 
         # Connect each button to its corresponding function
         
         # communication buttons
-        self.pushButton.clicked.connect(self.send_text)
+        self.custom_msg_enter_button.clicked.connect(self.send_text)
         self.request.clicked.connect(lambda: self.sender.phrase_sender("Hear us?"))
         self.pull_over.clicked.connect(lambda: self.sender.phrase_sender("Pull Over"))
         self.egress.clicked.connect(lambda: self.sender.phrase_sender("EGRESS"))
@@ -66,11 +83,19 @@ class App:
         self.vfm_up.clicked.connect(self.sender.vfm_up_sender)
         self.vfm_down.clicked.connect(self.sender.vfm_down_sender)
 
+        # PI gain buttons
+        self.PI_KP_enter_button.clicked.connect(
+            lambda: self.sender.cruise_PI_KP_sender(float(self.PI_KP_bar.text())))
+        self.PI_KI_enter_button.clicked.connect(
+            lambda: self.sender.cruise_PI_KI_sender(float(self.PI_KI_bar.text())))
+        self.PI_KD_enter_button.clicked.connect(
+            lambda: self.sender.cruise_PI_KD_sender(float(self.PI_KD_bar.text())))
+
 
     #Functions for the buttons in Communication Request - tharaka
     def send_text(self):
-        print(len(self.text_edit.text()))
-        text = self.text_edit.text()
+        print(len(self.custom_msg_bar.text()))
+        text = self.custom_msg_bar.text()
         self.sender.phrase_sender(text)
 
 
