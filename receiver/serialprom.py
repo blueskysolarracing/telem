@@ -437,6 +437,18 @@ def recieve_mqtt(sender_buffer):
         sender_buffer.put(base64.b64decode(data.payload))
         print("sending data")
 
+def parser_task():
+    byte_buffer = mp.Queue()
+    send_buffer = mp.Queue()
+    serial_proc = mp.Process(target=read_serial, args=(byte_buffer, send_buffer,))
+    serial_proc.start()
+    serial_parser = mp.Process(target=start_parser, args=(byte_buffer,))
+    serial_parser.start()
+
+    serial_sender = mp.Process(target=recieve_mqtt, args=(send_buffer,))
+    serial_sender.start()
+
+
 
 def main():
     """

@@ -2,7 +2,7 @@ import serial
 import paho.mqtt.publish as publish
 import json
 
-ser = serial.Serial('/dev/ttyUSB0', 9600)
+ser = serial.Serial('/dev/ttyUSB2', 9600)
 import time
 
 while True:
