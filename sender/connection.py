@@ -11,5 +11,5 @@ class Connection:
     def write(self, data):
         print(f"Writing data: {data}")
 
-        publish("sender/packet", payload=base64.b64encode(data), qos=0, 
+        publish.single("sender/packet", payload=base64.b64encode(data), qos=0, 
         hostname=MQTT_HOST, port=MQTT_PORT)
