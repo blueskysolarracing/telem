@@ -440,13 +440,22 @@ def read_serial(byte_buffer: mp.Queue, send_buffer: mp.Queue):
 
 def recieve_mqtt(sender_buffer):
     while 1:
-        print("listeneng")
         data = subscribe.simple("sender/packet", qos=0, msg_count=1,
             hostname=MQTT_HOST, 
             port=MQTT_PORT, keepalive=60)
-        print("got data")
         sender_buffer.put(base64.b64decode(data.payload))
-        print("sending data")
+
+def parser_task():
+    byte_buffer = mp.Queue()
+    send_buffer = mp.Queue()
+    serial_proc = mp.Process(target=read_serial, args=(byte_buffer, send_buffer,))
+    serial_proc.start()
+    serial_parser = mp.Process(target=start_parser, args=(byte_buffer,))
+    serial_parser.start()
+
+    serial_sender = mp.Process(target=recieve_mqtt, args=(send_buffer,))
+    serial_sender.start()
+
 
 
 def main():
