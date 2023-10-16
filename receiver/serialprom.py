@@ -13,7 +13,7 @@ import sys
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 import shared.utilities as utilities
-
+from shared.protocol_ids import Chase_Data_ID
 
 
 #SERIAL_PORT = '/dev/pts/3'
@@ -334,6 +334,10 @@ class Parser:
             elif self.data_id == BUS_METRICS:
                 self.send_bus_metrics(MCMB, struct.unpack('f', self.payload[0:4])[0], struct.unpack('f', self.payload[4:8])[0])
 
+            elif self.data_id == Chase_Data_ID:
+                print("Got ACK from mcmb")\
+                
+                
         # DCMB
         elif self.sender == DCMB_SENDER_ID:
             if self.data_id == HEARTBEAT:
@@ -429,13 +433,10 @@ def read_serial(byte_buffer: mp.Queue, send_buffer: mp.Queue):
 
 def recieve_mqtt(sender_buffer):
     while 1:
-        print("listeneng")
         data = subscribe.simple("sender/packet", qos=0, msg_count=1,
             hostname=MQTT_HOST, 
             port=MQTT_PORT, keepalive=60)
-        print("got data")
         sender_buffer.put(base64.b64decode(data.payload))
-        print("sending data")
 
 def parser_task():
     byte_buffer = mp.Queue()
