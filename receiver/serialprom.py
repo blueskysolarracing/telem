@@ -341,10 +341,15 @@ class Parser:
                 self.send_bus_metrics(MCMB, struct.unpack('f', self.payload[0:4])[0], struct.unpack('f', self.payload[4:8])[0])
             elif self.data_id == Chase_Data_ID.CHASE_CRUISE_PI_GAIN_ID:
                 print("received cruise control ack")
-                k_d = struct.unpack('I', self.payload[8:12])[0] / 100000
+                k_p = struct.unpack('I', self.payload[8:12])[0] / 100000
                 k_i = struct.unpack('I', self.payload[4:8])[0] / 100000
-                k_p = struct.unpack('I', self.payload[0:4])[0] / 100000
-                print(f"set cruise control gains to kp: {k_p}, ki: {k_i}, kd: {k_d}")
+                k_d = struct.unpack('I', self.payload[0:4])[0] / 100000
+                if self.payload[14] == 1:
+                    print(f"k_p set to {k_p}")
+                if self.payload[13] == 1:
+                    print(f"k_i set to {k_i}")
+                if self.payload[12] == 1:
+                    print(f"k_d set to {k_d}")
         # DCMB
         elif self.sender == DCMB_SENDER_ID:
             if self.data_id == HEARTBEAT:
