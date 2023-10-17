@@ -2,12 +2,13 @@ import serial
 import paho.mqtt.publish as publish
 import json
 
-ser = serial.Serial('/dev/ttyUSB2', 9600)
+ser = serial.Serial('/dev/ttyUSB0', 9600)
 import time
 
 while True:
     time.sleep(0.01)
     data = ser.readline()
+    print("got data")
     data = data.decode('utf-8')
     new_data = data.split(',')
     if len(new_data) > 2:

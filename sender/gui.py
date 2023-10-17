@@ -52,6 +52,9 @@ class App:
         self.PI_KD_bar.setMaxLength(10)
         self.PI_KD_enter_button = QtWidgets.QPushButton('Enter KD')
 
+        self.f_enable = QtWidgets.QPushButton('f_enable')
+        self.f_disable = QtWidgets.QPushButton('f_disable')
+
         self.parent_layout.addWidget(self.request)
         self.parent_layout.addWidget(self.pull_over)
         self.parent_layout.addWidget(self.egress)
@@ -68,6 +71,8 @@ class App:
         self.parent_layout.addWidget(self.PI_KI_enter_button)
         self.parent_layout.addWidget(self.PI_KD_bar)
         self.parent_layout.addWidget(self.PI_KD_enter_button)
+        self.parent_layout.addWidget(self.f_enable)
+        self.parent_layout.addWidget(self.f_disable)
 
         # Connect each button to its corresponding function
         
@@ -91,6 +96,9 @@ class App:
         self.PI_KD_enter_button.clicked.connect(
             lambda: self.sender.cruise_PI_KD_sender(float(self.PI_KD_bar.text())))
 
+        # f enable buttons
+        self.f_enable.clicked.connect(self.sender.f_enable_sender)
+        self.f_disable.clicked.connect(self.sender.f_disable_sender)
 
     #Functions for the buttons in Communication Request - tharaka
     def send_text(self):

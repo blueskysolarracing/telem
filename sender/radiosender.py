@@ -102,6 +102,10 @@ class BssrProtocolSender:
         
         self.send_serial(payload)
 
+    def _fault_enable_sender(self, fault_enable):
+        payload = [Chase_Data_ID.CHASE_FAULT_ENABLE_ID, fault_enable, 0x00, 0x00]
+        self.send_serial(payload)
+
     def phrase_sender(self, phrase):
         print(f"Sending Message: {phrase}")
         MAX_PHRASE_LENGTH = 11
@@ -141,3 +145,9 @@ class BssrProtocolSender:
 
     def cruise_PI_KD_sender(self, k_d):
         self._cruise_PI_sender(None, None, k_d)
+
+    def f_enable_sender(self):
+        self._fault_enable_sender(0x01)
+
+    def f_disable_sender(self):
+        self._fault_enable_sender(0x00)

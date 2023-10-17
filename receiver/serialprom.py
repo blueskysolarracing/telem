@@ -13,6 +13,7 @@ import sys
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 import shared.utilities as utilities
+from shared.protocol_ids import Chase_Data_ID
 
 
 
@@ -310,7 +311,12 @@ class Parser:
                 self.send_cell_soc()
             elif self.data_id == RELAY_STATE:
                 pass
-
+            elif self.data_id == Chase_Data_ID.CHASE_FAULT_ENABLE_ID:
+                print("fault enable ack")
+                if self.payload[2] == 1:
+                    print("fault enabled")
+                else:
+                    print("fault disabled")
 
         # PPTMB
         elif self.sender == PPTMB_SENDER_ID:
@@ -333,7 +339,17 @@ class Parser:
 
             elif self.data_id == BUS_METRICS:
                 self.send_bus_metrics(MCMB, struct.unpack('f', self.payload[0:4])[0], struct.unpack('f', self.payload[4:8])[0])
-
+            elif self.data_id == Chase_Data_ID.CHASE_CRUISE_PI_GAIN_ID:
+                print("received cruise control ack")
+                k_p = struct.unpack('I', self.payload[8:12])[0] / 100000
+                k_i = struct.unpack('I', self.payload[4:8])[0] / 100000
+                k_d = struct.unpack('I', self.payload[0:4])[0] / 100000
+                if self.payload[14] == 1:
+                    print(f"k_p set to {k_p}")
+                if self.payload[13] == 1:
+                    print(f"k_i set to {k_i}")
+                if self.payload[12] == 1:
+                    print(f"k_d set to {k_d}")
         # DCMB
         elif self.sender == DCMB_SENDER_ID:
             if self.data_id == HEARTBEAT:
@@ -429,13 +445,10 @@ def read_serial(byte_buffer: mp.Queue, send_buffer: mp.Queue):
 
 def recieve_mqtt(sender_buffer):
     while 1:
-        print("listeneng")
         data = subscribe.simple("sender/packet", qos=0, msg_count=1,
             hostname=MQTT_HOST, 
             port=MQTT_PORT, keepalive=60)
-        print("got data")
         sender_buffer.put(base64.b64decode(data.payload))
-        print("sending data")
 
 def parser_task():
     byte_buffer = mp.Queue()

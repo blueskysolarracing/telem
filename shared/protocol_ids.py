@@ -65,4 +65,5 @@ class Chase_Data_ID(IntEnum):
     CHASE_MESSAGE_ID = 6
     CHASE_VMF_ID = 7
     CHASE_ECO_MODE_ID = 8
+    CHASE_FAULT_ENABLE_ID = 9
     CHASE_HEARTBEAT_ID = 0x0F
